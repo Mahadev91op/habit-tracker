@@ -1,102 +1,91 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import Header from '@/components/Header';
+import HabitCard from '@/components/HabitCard';
 
 export default function Dashboard() {
   const [habits, setHabits] = useState([]);
   const [checkIns, setCheckIns] = useState([]);
+  const [loading, setLoading] = useState(true);
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Habits aur aaj ke check-ins fetch karo
   useEffect(() => {
-    fetch('/api/habits').then(r => r.json()).then(setHabits);
-    fetch(`/api/checkin?date=${today}`).then(r => r.json()).then(setCheckIns);
-  }, []);
+    Promise.all([
+      fetch('/api/habits').then(r => r.json()),
+      fetch(`/api/checkin?date=${today}`).then(r => r.json())
+    ]).then(([habitsData, checkInsData]) => {
+      setHabits(habitsData);
+      setCheckIns(checkInsData);
+      setLoading(false);
+    });
+  }, [today]);
 
-  // Habit complete karo ya uncomplete
   const toggleHabit = async (habitId) => {
     const existing = checkIns.find(c => c.habitId === habitId);
     const newStatus = !existing?.completed;
     
+    setCheckIns(prev => {
+      if (existing) return prev.map(c => c.habitId === habitId ? { ...c, completed: newStatus } : c);
+      return [...prev, { habitId, date: today, completed: newStatus }];
+    });
+
     await fetch('/api/checkin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ habitId, date: today, completed: newStatus })
     });
-    
-    // Local state update karo
-    fetch(`/api/checkin?date=${today}`).then(r => r.json()).then(setCheckIns);
   };
 
-  const isCompleted = (habitId) => 
-    checkIns.find(c => c.habitId === habitId)?.completed || false;
-
+  const isCompleted = (habitId) => checkIns.find(c => c.habitId === habitId)?.completed || false;
   const completedCount = habits.filter(h => isCompleted(h._id)).length;
 
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+    </div>
+  );
+
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-gray-900">Aaj ka din 🌅</h1>
-        <p className="text-gray-500 mt-1">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+    <div className="min-h-screen pb-24 font-sans selection:bg-indigo-100">
+      <main className="max-w-xl mx-auto px-5">
         
-        {/* Progress bar */}
-        <div className="mt-4 bg-gray-100 rounded-full h-3">
-          <div 
-            className="bg-indigo-500 h-3 rounded-full transition-all duration-500"
-            style={{ width: habits.length ? `${(completedCount/habits.length)*100}%` : '0%' }}
-          />
+        <Header totalHabits={habits.length} completedHabits={completedCount} />
+
+        <div className="space-y-3 relative z-10">
+          {habits.length > 0 ? (
+            habits.map((habit, index) => (
+              <div key={habit._id} style={{ animationDelay: `${index * 80}ms` }} className="animate-fade-in-up">
+                <HabitCard 
+                  habit={habit} 
+                  isCompleted={isCompleted(habit._id)} 
+                  onToggle={toggleHabit} 
+                />
+              </div>
+            ))
+          ) : (
+             <div className="text-center py-16 animate-fade-in-up">
+               <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-5">
+                 <span className="text-3xl">📝</span>
+               </div>
+               <h3 className="text-lg font-semibold text-slate-800">Clear Canvas</h3>
+               <p className="text-slate-500 text-sm mt-1">Start by adding your first habit below.</p>
+             </div>
+          )}
         </div>
-        <p className="text-sm text-gray-500 mt-1">{completedCount}/{habits.length} habits complete</p>
-      </div>
 
-      {/* Habits List */}
-      <div className="space-y-3">
-        {habits.map(habit => (
-          <div 
-            key={habit._id}
-            onClick={() => toggleHabit(habit._id)}
-            className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all
-              ${isCompleted(habit._id) 
-                ? 'bg-green-50 border-green-200' 
-                : 'bg-white border-gray-200 hover:border-indigo-300'}`}
+        <div className="fixed bottom-8 left-0 right-0 flex justify-center pointer-events-none z-50">
+          <a 
+            href="/add-habit"
+            className="pointer-events-auto bg-slate-900 text-white px-7 py-3.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(79,70,229,0.2)] hover:-translate-y-1 hover:bg-indigo-600 transition-all duration-300 font-medium flex items-center gap-2.5 active:scale-95"
           >
-            {/* Color dot */}
-            <div 
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-sm
-                ${isCompleted(habit._id) ? 'bg-green-500' : ''}`}
-              style={!isCompleted(habit._id) ? { backgroundColor: habit.color } : {}}
-            >
-              {isCompleted(habit._id) ? '✓' : ''}
-            </div>
-            
-            <div className="flex-1">
-              <p className={`font-medium ${isCompleted(habit._id) ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                {habit.name}
-              </p>
-              {habit.targetTime && (
-                <p className="text-xs text-gray-400">⏰ {habit.targetTime}</p>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {habits.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-4xl mb-3">📝</p>
-            <p>Koi habit nahi hai abhi</p>
-            <p className="text-sm">Neeche "Add Habit" button se shuru karo</p>
-          </div>
-        )}
-      </div>
-
-      {/* Add Habit Button */}
-      <a 
-        href="/add-habit"
-        className="fixed bottom-6 right-6 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
-      >
-        + Habit Add Karo
-      </a>
-    </main>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Habit
+          </a>
+        </div>
+      </main>
+    </div>
   );
 }
