@@ -52,7 +52,6 @@ export default function Dashboard() {
     await fetch(`/api/habits/${habitId}`, { method: 'DELETE' });
   };
 
-  // Naya function jo edit page pe bheje
   const editHabit = (habitId) => {
     router.push(`/edit-habit/${habitId}`);
   };
@@ -61,7 +60,7 @@ export default function Dashboard() {
   const completedCount = habits.filter(h => isCompletedToday(h._id)).length;
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen bg-[#F3F5F8] dark:bg-[#0F172A] flex items-center justify-center transition-colors">
       <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
     </div>
   );
@@ -81,7 +80,7 @@ export default function Dashboard() {
                   isCompleted={isCompletedToday(habit._id)} 
                   onToggle={toggleHabit} 
                   onDelete={deleteHabit}
-                  onEdit={editHabit} // Naya prop pass kiya
+                  onEdit={editHabit}
                   habitCheckIns={checkIns.filter(c => c.habitId === habit._id)}
                   last7Days={last7Days}
                   today={today}
@@ -90,25 +89,35 @@ export default function Dashboard() {
             ))
           ) : (
              <div className="text-center py-16 animate-fade-in-up">
-               <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-5">
+               <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center mx-auto mb-5 transition-colors">
                  <span className="text-3xl">📝</span>
                </div>
-               <h3 className="text-lg font-semibold text-slate-800">Clear Canvas</h3>
-               <p className="text-slate-500 text-sm mt-1">Start by adding your first habit below.</p>
+               <h3 className="text-lg font-semibold text-slate-800 dark:text-white transition-colors">Clear Canvas</h3>
+               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 transition-colors">Start by adding your first habit below.</p>
              </div>
           )}
         </div>
 
+        {/* Naya Floating Bar (Add Habit + Analytics) */}
         <div className="fixed bottom-8 left-0 right-0 flex justify-center pointer-events-none z-50">
-          <a 
-            href="/add-habit"
-            className="pointer-events-auto bg-slate-900 text-white px-7 py-3.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(79,70,229,0.2)] hover:-translate-y-1 hover:bg-indigo-600 transition-all duration-300 font-medium flex items-center gap-2.5 active:scale-95"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Habit
-          </a>
+          <div className="pointer-events-auto bg-slate-900 dark:bg-slate-800 p-2 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-2 border border-slate-700/50">
+            <a 
+              href="/analytics"
+              className="text-white px-5 py-3 rounded-2xl hover:bg-slate-800 dark:hover:bg-slate-700 transition-all duration-300 font-medium flex items-center gap-2"
+            >
+              📊 Stats
+            </a>
+            <div className="w-[1px] h-8 bg-slate-700"></div>
+            <a 
+              href="/add-habit"
+              className="bg-indigo-600 text-white px-6 py-3 rounded-2xl shadow-md hover:bg-indigo-500 hover:-translate-y-0.5 transition-all duration-300 font-medium flex items-center gap-2 active:scale-95"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Habit
+            </a>
+          </div>
         </div>
       </main>
     </div>
