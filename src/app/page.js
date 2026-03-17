@@ -12,30 +12,51 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   
   const today = format(new Date(), 'yyyy-MM-dd');
-  const last7Days = Array.from({ length: 7 }).map((_, index) => format(subDays(new Date(), 6 - index), 'yyyy-MM-dd'));
+  
+  // Pichle 7 dino ka data nikalne ke liye
+  const last7Days = Array.from({ length: 7 }).map((_, index) => 
+    format(subDays(new Date(), 6 - index), 'yyyy-MM-dd')
+  );
 
   useEffect(() => {
-    Promise.all([fetch('/api/habits').then(r => r.json()), fetch('/api/checkin').then(r => r.json())])
-      .then(([habitsData, checkInsData]) => { setHabits(habitsData); setCheckIns(checkInsData); setLoading(false); });
+    Promise.all([
+      fetch('/api/habits').then(r => r.json()),
+      fetch('/api/checkin').then(r => r.json())
+    ]).then(([habitsData, checkInsData]) => {
+      setHabits(habitsData);
+      setCheckIns(checkInsData);
+      setLoading(false);
+    });
   }, []);
 
   const toggleHabit = async (habitId) => {
     const existing = checkIns.find(c => c.habitId === habitId && c.date === today);
     const newStatus = !existing?.completed;
+    
+    // Optimistic UI Update
     setCheckIns(prev => {
-      if (existing) return prev.map(c => (c.habitId === habitId && c.date === today) ? { ...c, completed: newStatus } : c);
+      if (existing) {
+        return prev.map(c => (c.habitId === habitId && c.date === today) ? { ...c, completed: newStatus } : c);
+      }
       return [...prev, { habitId, date: today, completed: newStatus }];
     });
-    await fetch('/api/checkin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ habitId, date: today, completed: newStatus }) });
+
+    await fetch('/api/checkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ habitId, date: today, completed: newStatus })
+    });
   };
 
   const deleteHabit = async (habitId) => {
-    if (!window.confirm("Delete this habit?")) return;
+    if (!window.confirm("Bhai, kya aap sach me ye habit delete karna chahte ho?")) return;
     setHabits(prev => prev.filter(h => h._id !== habitId));
     await fetch(`/api/habits/${habitId}`, { method: 'DELETE' });
   };
 
-  const isCompletedToday = (habitId) => checkIns.find(c => c.habitId === habitId && c.date === today)?.completed || false;
+  const isCompletedToday = (habitId) => 
+    checkIns.find(c => c.habitId === habitId && c.date === today)?.completed || false;
+
   const completedCount = habits.filter(h => isCompletedToday(h._id)).length;
 
   if (loading) return (
@@ -50,11 +71,21 @@ export default function Dashboard() {
         
         <Header totalHabits={habits.length} completedHabits={completedCount} />
 
+        {/* Habits List Container */}
         <div className="space-y-2.5 sm:space-y-3 relative z-10">
           {habits.length > 0 ? (
             habits.map((habit, index) => (
               <div key={habit._id} style={{ animationDelay: `${index * 80}ms` }} className="animate-fade-in-up">
-                <HabitCard habit={habit} isCompleted={isCompletedToday(habit._id)} onToggle={toggleHabit} onDelete={deleteHabit} onEdit={(id) => router.push(`/edit-habit/${id}`)} habitCheckIns={checkIns.filter(c => c.habitId === habit._id)} last7Days={last7Days} today={today} />
+                <HabitCard 
+                  habit={habit} 
+                  isCompleted={isCompletedToday(habit._id)} 
+                  onToggle={toggleHabit} 
+                  onDelete={deleteHabit} 
+                  onEdit={(id) => router.push(`/edit-habit/${id}`)} 
+                  habitCheckIns={checkIns.filter(c => c.habitId === habit._id)} 
+                  last7Days={last7Days} 
+                  today={today} 
+                />
               </div>
             ))
           ) : (
@@ -62,23 +93,37 @@ export default function Dashboard() {
                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white dark:bg-slate-800 rounded-[1rem] sm:rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center mx-auto mb-4 transition-colors">
                  <span className="text-2xl sm:text-3xl">📝</span>
                </div>
-               <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-white transition-colors">Clear Canvas</h3>
-               <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">Start by adding your first habit.</p>
+               <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-white transition-colors">Empty List</h3>
+               <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">Start your journey by adding a habit.</p>
              </div>
           )}
         </div>
 
-        {/* Floating App-like Bottom Dock for Phone */}
+        {/* Floating App-like Navigation Bar (Bottom Dock) */}
         <div className="fixed bottom-6 sm:bottom-8 left-0 right-0 flex justify-center pointer-events-none z-50 px-4">
-          <div className="pointer-events-auto w-full max-w-[min(100%,22rem)] sm:w-auto bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl p-1.5 sm:p-2 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.15)] flex items-center justify-between sm:justify-center gap-1 sm:gap-2 border border-slate-700/50">
-            <a href="/analytics" className="text-white px-4 sm:px-5 py-3 sm:py-3.5 rounded-full hover:bg-slate-800 dark:hover:bg-slate-700 transition-all font-medium text-sm sm:text-base flex items-center gap-1.5 flex-1 sm:flex-none justify-center">
-              📊 <span className="hidden sm:inline">Stats</span><span className="inline sm:hidden">Stats</span>
-            </a>
+          <div className="pointer-events-auto w-full max-w-[min(100%,22rem)] sm:w-auto bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl p-1.5 sm:p-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center justify-between sm:justify-center gap-1 sm:gap-2 border border-slate-700/50">
+            
+            {/* Analytics Link */}
+            <button 
+              onClick={() => router.push('/analytics')}
+              className="text-white px-4 sm:px-5 py-3 sm:py-3.5 rounded-full hover:bg-slate-800 dark:hover:bg-slate-700 transition-all font-medium text-sm sm:text-base flex items-center gap-1.5 flex-1 sm:flex-none justify-center"
+            >
+              📊 <span className="inline">Stats</span>
+            </button>
+            
             <div className="w-[1px] h-6 sm:h-8 bg-slate-700/50"></div>
-            <a href="/add-habit" className="bg-indigo-600 text-white px-5 sm:px-6 py-3 sm:py-3.5 rounded-full shadow-md hover:bg-indigo-500 active:scale-95 transition-all font-medium text-sm sm:text-base flex items-center gap-1.5 flex-1 sm:flex-none justify-center">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+            
+            {/* Add Habit Link */}
+            <button 
+              onClick={() => router.push('/add-habit')}
+              className="bg-indigo-600 text-white px-5 sm:px-6 py-3 sm:py-3.5 rounded-full shadow-md hover:bg-indigo-500 active:scale-95 transition-all font-bold text-sm sm:text-base flex items-center gap-1.5 flex-1 sm:flex-none justify-center"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
               New Habit
-            </a>
+            </button>
+            
           </div>
         </div>
       </main>

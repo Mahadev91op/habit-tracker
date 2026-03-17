@@ -5,8 +5,8 @@ import ThemeProvider from "@/components/ThemeProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Habit Tracker",
-  description: "Track your daily habits in style",
+  title: "Habit Tracker | Pro",
+  description: "Track your habits with a premium experience",
 };
 
 export default function RootLayout({ children }) {
