@@ -1,14 +1,14 @@
-export default function HabitCard({ habit, isCompleted, onToggle }) {
+export default function HabitCard({ habit, isCompleted, onToggle, onDelete }) {
   return (
     <div 
-      onClick={() => onToggle(habit._id)}
-      className={`group relative flex items-center gap-4 p-4.5 rounded-2xl cursor-pointer transition-all duration-300 ease-out
+      className={`group relative flex items-center gap-4 p-4.5 rounded-2xl transition-all duration-300 ease-out
         ${isCompleted 
           ? 'bg-slate-50/60 border border-slate-200/60 opacity-60 shadow-sm' 
           : 'bg-white border border-slate-200 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:border-indigo-200'}`}
     >
       <div 
-        className={`w-7 h-7 rounded-xl border-[1.5px] flex items-center justify-center transition-all duration-300 ease-out
+        onClick={() => onToggle(habit._id)}
+        className={`w-7 h-7 cursor-pointer rounded-xl border-[1.5px] flex items-center justify-center transition-all duration-300 ease-out
           ${isCompleted 
             ? 'bg-slate-400 border-slate-400' 
             : 'bg-slate-50 border-slate-300 group-hover:border-indigo-400 group-hover:bg-indigo-50/50'}`}
@@ -21,7 +21,7 @@ export default function HabitCard({ habit, isCompleted, onToggle }) {
         </svg>
       </div>
       
-      <div className="flex-1 ml-1">
+      <div className="flex-1 ml-1 cursor-pointer" onClick={() => onToggle(habit._id)}>
         <p className={`text-[1.05rem] font-medium transition-all duration-300 ${isCompleted ? 'line-through text-slate-500' : 'text-slate-800'}`}>
           {habit.name}
         </p>
@@ -34,9 +34,23 @@ export default function HabitCard({ habit, isCompleted, onToggle }) {
         </div>
       )}
 
+      {/* Premium Delete Button */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation(); // Ye zaroori hai taaki delete dabane pe habit tick na ho jaye
+          onDelete(habit._id);
+        }}
+        className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-300 -mr-1"
+        title="Delete Habit"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+
       {!isCompleted && (
         <div 
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 rounded-r-md opacity-0 group-hover:opacity-100 transition-all duration-300"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 rounded-r-md opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"
           style={{ backgroundColor: habit.color || '#4f46e5' }}
         />
       )}

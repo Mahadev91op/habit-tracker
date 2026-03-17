@@ -37,6 +37,19 @@ export default function Dashboard() {
     });
   };
 
+  // Naya Delete function
+  const deleteHabit = async (habitId) => {
+    if (!window.confirm("Are you sure you want to delete this habit?")) return;
+
+    // UI se turant hatao
+    setHabits(prev => prev.filter(h => h._id !== habitId));
+    
+    // Database se delete karo
+    await fetch(`/api/habits/${habitId}`, {
+      method: 'DELETE',
+    });
+  };
+
   const isCompleted = (habitId) => checkIns.find(c => c.habitId === habitId)?.completed || false;
   const completedCount = habits.filter(h => isCompleted(h._id)).length;
 
@@ -60,6 +73,7 @@ export default function Dashboard() {
                   habit={habit} 
                   isCompleted={isCompleted(habit._id)} 
                   onToggle={toggleHabit} 
+                  onDelete={deleteHabit}
                 />
               </div>
             ))
