@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* Yeh line Tailwind v4 ko batati hai ki manual .dark class aane par dark mode on karna hai */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Custom Premium Animations */
 @keyframes fadeInUp {
