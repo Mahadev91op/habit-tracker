@@ -1,35 +1,46 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import Header from '@/components/Header';
 import HabitCard from '@/components/HabitCard';
 
 export default function Dashboard() {
   const [habits, setHabits] = useState([]);
-  const [checkIns, setCheckIns] = useState([]);
+  const [checkIns, setCheckIns] = useState([]); // Ab ye saare din ke check-ins store karega
   const [loading, setLoading] = useState(true);
+  
   const today = format(new Date(), 'yyyy-MM-dd');
+
+  // Pichle 7 dino ka array generate karo (e.g., [2024-03-10, 2024-03-11... today])
+  const last7Days = Array.from({ length: 7 }).map((_, index) => {
+    return format(subDays(new Date(), 6 - index), 'yyyy-MM-dd');
+  });
 
   useEffect(() => {
     Promise.all([
       fetch('/api/habits').then(r => r.json()),
-      fetch(`/api/checkin?date=${today}`).then(r => r.json())
+      fetch('/api/checkin').then(r => r.json()) // URL se '?date=' hata diya taaki history aaye
     ]).then(([habitsData, checkInsData]) => {
       setHabits(habitsData);
       setCheckIns(checkInsData);
       setLoading(false);
     });
-  }, [today]);
+  }, []);
 
   const toggleHabit = async (habitId) => {
-    const existing = checkIns.find(c => c.habitId === habitId);
+    // Aaj ka record dhundo
+    const existing = checkIns.find(c => c.habitId === habitId && c.date === today);
     const newStatus = !existing?.completed;
     
+    // UI me turant update karo (Optimistic UI)
     setCheckIns(prev => {
-      if (existing) return prev.map(c => c.habitId === habitId ? { ...c, completed: newStatus } : c);
+      if (existing) {
+        return prev.map(c => (c.habitId === habitId && c.date === today) ? { ...c, completed: newStatus } : c);
+      }
       return [...prev, { habitId, date: today, completed: newStatus }];
     });
 
+    // Database update karo
     await fetch('/api/checkin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,21 +48,15 @@ export default function Dashboard() {
     });
   };
 
-  // Naya Delete function
   const deleteHabit = async (habitId) => {
     if (!window.confirm("Are you sure you want to delete this habit?")) return;
-
-    // UI se turant hatao
     setHabits(prev => prev.filter(h => h._id !== habitId));
-    
-    // Database se delete karo
-    await fetch(`/api/habits/${habitId}`, {
-      method: 'DELETE',
-    });
+    await fetch(`/api/habits/${habitId}`, { method: 'DELETE' });
   };
 
-  const isCompleted = (habitId) => checkIns.find(c => c.habitId === habitId)?.completed || false;
-  const completedCount = habits.filter(h => isCompleted(h._id)).length;
+  // Sirf aaj (today) ka check karo header progress aur tick box ke liye
+  const isCompletedToday = (habitId) => checkIns.find(c => c.habitId === habitId && c.date === today)?.completed || false;
+  const completedCount = habits.filter(h => isCompletedToday(h._id)).length;
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -71,9 +76,13 @@ export default function Dashboard() {
               <div key={habit._id} style={{ animationDelay: `${index * 80}ms` }} className="animate-fade-in-up">
                 <HabitCard 
                   habit={habit} 
-                  isCompleted={isCompleted(habit._id)} 
+                  isCompleted={isCompletedToday(habit._id)} 
                   onToggle={toggleHabit} 
                   onDelete={deleteHabit}
+                  // History aur dates Card me bhejo
+                  habitCheckIns={checkIns.filter(c => c.habitId === habit._id)}
+                  last7Days={last7Days}
+                  today={today}
                 />
               </div>
             ))
