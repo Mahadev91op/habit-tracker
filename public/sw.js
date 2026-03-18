@@ -1,16 +1,18 @@
 self.addEventListener('push', function (event) {
-  const data = event.data.json();
+  const data = event.data ? event.data.json() : {};
+  
   const options = {
-    body: data.body,
-    icon: '/favicon.ico', // Aap apna logo path de sakte hain
+    body: data.body || "Aapka reminder!",
+    icon: '/favicon.ico', 
     badge: '/favicon.ico',
+    vibrate: [200, 100, 200],
     data: {
       url: data.url || '/'
     }
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title || "Habit Tracker", options)
   );
 });
 
