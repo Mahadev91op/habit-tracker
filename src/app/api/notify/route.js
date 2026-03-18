@@ -2,7 +2,7 @@ import webpush from 'web-push';
 import { NextResponse } from 'next/server';
 
 webpush.setVapidDetails(
-  process.env.VAPID_EMAIL,
+  `mailto:${process.env.VAPID_EMAIL}`, // यहाँ बदलाव किया गया है
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
